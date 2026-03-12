@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const sequelize = require('../database/database');
-const User = require('../models/User')(sequelize);
+const { sequelize, User, EmailVerificationToken } = require('../database/database');
 const { sendConfirmationEmail, sendPasswordResetEmail, sendPasswordChangedEmail } = require('../email_service/transporter');
 
 const encryptPassword = (password) =>
@@ -9,9 +8,6 @@ const encryptPassword = (password) =>
 
 const generateAccessToken = (user, userId) =>
     jwt.sign({ user, userId }, process.env.JWT_SECRET, { expiresIn: '24h' }); // token expires in 24 hours, adjust as needed
-
-const generateEmailToken = (userId) =>
-    jwt.sign({ userId, purpose: 'email_verification' }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
 
 // POST: /auth/signup
@@ -40,9 +36,14 @@ exports.register = async (req, res) => {
             passwordHash: await encryptedPassword
         });
 
+        // Create verification token in database
+        const verificationToken = await EmailVerificationToken.create({
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+        });
+
         // Send confirmation email
-        const emailToken = generateEmailToken(user.id);
-        await sendConfirmationEmail(user, emailToken);
+        await sendConfirmationEmail(user, verificationToken.token);
 
         const accessToken = generateAccessToken(user.username, user.id);
         res.status(201).json({
@@ -65,35 +66,42 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ message: 'Verification token is required' });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        // Find token in database
+        const verificationToken = await EmailVerificationToken.findOne({
+            where: { token },
+            include: User
+        });
 
-        if (decoded.purpose !== 'email_verification') {
-            return res.status(400).json({ message: 'Invalid token' });
+        if (!verificationToken) {
+            return res.status(400).json({ message: 'Invalid verification token' });
         }
 
-        const user = await User.findByPk(decoded.userId);
+        // Check if token has expired
+        if (new Date() > verificationToken.expiresAt) {
+            await verificationToken.destroy();
+            return res.status(400).json({ message: 'Verification link has expired' });
+        }
+
+        const user = verificationToken.user;
 
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         if (user.email_verified) {
+            await verificationToken.destroy();
             return res.status(400).json({ message: 'Email already verified' });
         }
 
+        // Mark user as verified and delete token
         await user.update({ email_verified: true });
+        await verificationToken.destroy();
 
         res.status(200).json({
             success: true,
             message: 'Email verified successfully'
         });
     } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(400).json({ message: 'Verification link has expired' });
-        }
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(400).json({ message: 'Invalid verification token' });
-        }
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
