@@ -53,3 +53,44 @@ exports.register = async (req, res) => {
         res.status(500).json({ message: 'Internal server error', error: error.message });
     };
 };
+
+exports.verifyEmail = async (req, res) => {
+    try {
+        const { token } = req.query;
+
+        if (!token) {
+            return res.status(400).json({ message: 'Verification token is required' });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.purpose !== 'email_verification') {
+            return res.status(400).json({ message: 'Invalid token' });
+        }
+
+        const user = await User.findByPk(decoded.userId);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (user.email_verified) {
+            return res.status(400).json({ message: 'Email already verified' });
+        }
+
+        await user.update({ email_verified: true });
+
+        res.status(200).json({
+            success: true,
+            message: 'Email verified successfully'
+        });
+    } catch (error) {
+        if (error.name === 'TokenExpiredError') {
+            return res.status(400).json({ message: 'Verification link has expired' });
+        }
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(400).json({ message: 'Invalid verification token' });
+        }
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
