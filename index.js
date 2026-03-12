@@ -12,12 +12,12 @@ app.get('/status', (req, res) => {
 });
 
 // Database setup
-const sequelize = require('./database/database');
+const { sequelize } = require('./database/database');
 
-// Initialise models
-const User = require('./models/User')(sequelize);
+sequelize.sync({});
 
-sequelize.sync();
+// uncomment the line below to enable automatic schema updates (use with caution in production)
+// sequelize.sync({ alter: true })
 
 // Routes
 const authRoutes = require('./routes/authRoutes');

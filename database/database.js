@@ -8,4 +8,12 @@ const sequelize = new Sequelize({
     }
 });
 
-module.exports = sequelize;
+// Initialize models
+const User = require('../models/User')(sequelize);
+const EmailVerificationToken = require('../models/EmailVerificationToken')(sequelize);
+
+// Define associations
+User.hasOne(EmailVerificationToken, { foreignKey: 'userId', onDelete: 'CASCADE' });
+EmailVerificationToken.belongsTo(User, { foreignKey: 'userId' });
+
+module.exports = { sequelize, User, EmailVerificationToken };
