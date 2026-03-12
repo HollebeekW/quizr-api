@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { sequelize, User, EmailVerificationToken } = require('../database/database');
+const { sequelize, User, EmailVerificationToken, ResetPasswordToken } = require('../database/database');
 const { sendConfirmationEmail, sendPasswordResetEmail, sendPasswordChangedEmail } = require('../email_service/transporter');
 
 const encryptPassword = (password) =>
@@ -145,10 +145,16 @@ exports.forgotPassword = async (req, res) => {
             return res.status(400).json({ message: 'No account found with that email address' });
         }
 
-        // Generate password reset token
-        const resetToken = jwt.sign({ userId: user.id, purpose: 'password_reset' }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Delete any existing reset tokens for this user
+        await ResetPasswordToken.destroy({ where: { userId: user.id } });
 
-        await sendPasswordResetEmail(user, resetToken);
+        // Create password reset token in database
+        const resetToken = await ResetPasswordToken.create({
+            userId: user.id,
+            expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+        });
+
+        await sendPasswordResetEmail(user, resetToken.token);
         res.status(200).json({
             success: true,
             message: 'Password reset email sent. Please check your inbox.'
@@ -165,18 +171,33 @@ exports.resetPassword = async (req, res) => {
         if (newPassword !== confirmNewPassword) {
             return res.status(400).json({ message: 'Passwords do not match' });
         }
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (decoded.purpose !== 'password_reset') {
-            return res.status(400).json({ message: 'Invalid token' });
+
+        // Find token in database
+        const resetToken = await ResetPasswordToken.findOne({
+            where: { token },
+            include: User
+        });
+
+        if (!resetToken) {
+            return res.status(400).json({ message: 'Invalid password reset token' });
         }
 
-        const user = await User.findByPk(decoded.userId);
+        // Check if token has expired
+        if (new Date() > resetToken.expiresAt) {
+            await resetToken.destroy();
+            return res.status(400).json({ message: 'Password reset link has expired' });
+        }
+
+        const user = resetToken.user;
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await user.update({ passwordHash: hashedPassword });
+
+        // Delete the used token
+        await resetToken.destroy();
 
         await sendPasswordChangedEmail(user);
 
@@ -185,12 +206,6 @@ exports.resetPassword = async (req, res) => {
             message: 'Password reset successful'
         });
     } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(400).json({ message: 'Password reset link has expired' });
-        }
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(400).json({ message: 'Invalid password reset token' });
-        }
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
