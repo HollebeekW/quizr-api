@@ -10,8 +10,12 @@ app.get('/status', (req, res) => {
     });
 });
 
-// Database connection
+// Database setup
 const sequelize = require('./database/database');
+
+// Initialise models
+const User = require('./models/User')(sequelize);
+
 
 sequelize.sync();
 
