@@ -24,4 +24,30 @@ const sendConfirmationEmail = async (user, confirmationToken) => {
     return info;
 };
 
-module.exports = sendConfirmationEmail;
+const sendPasswordResetEmail = async (user, resetToken) => {
+    const resetLink = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
+
+    const info = await transporter.sendMail({
+        from: `"Quizr Support" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'Password Reset Request',
+        text: `Click the link to reset your password: ${resetLink}. If you did not request this, please ignore this email. This link will expire in 1 hour.`,
+        html: `<p>Hi ${user.username},</p><p>Click the link to reset your password: <a href="${resetLink}">Reset Password</a></p><p>If you did not request this, please ignore this email. This link will expire in 1 hour.</p>`
+    });
+
+    return info;
+};
+
+const sendPasswordChangedEmail = async (user) => {
+    const info = await transporter.sendMail({
+        from: `"Quizr Support" <${process.env.EMAIL_USER}>`,
+        to: user.email,
+        subject: 'Your password has been changed',
+        text: `Hi ${user.username}, your password has been successfully changed. If you did not perform this action, please contact our support immediately.`,
+        html: `<p>Hi ${user.username},</p><p>Your password has been successfully changed. If you did not perform this action, please contact our support immediately.</p>`
+    });
+
+    return info;
+};
+
+module.exports = { sendConfirmationEmail, sendPasswordResetEmail, sendPasswordChangedEmail };
