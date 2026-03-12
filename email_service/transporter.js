@@ -17,8 +17,8 @@ const sendConfirmationEmail = async (user, confirmationToken) => {
         from: `"Quizr Support" <${process.env.EMAIL_USER}>`,
         to: user.email,
         subject: 'Please confirm your email',
-        text: `Click the link to confirm your email: ${confirmLink}`,
-        html: `<p>Hi ${user.username},</p><p>Click the link to confirm your email: <a href="${confirmLink}">Confirm Email</a></p>`
+        text: `Click the link to confirm your email: ${confirmLink}. This link will expire in 24 hours.`,
+        html: `<p>Hi ${user.username},</p><p>Click the link to confirm your email: <a href="${confirmLink}">Confirm Email</a></p><p>This link will expire in 24 hours.</p>`
     });
     
     return info;

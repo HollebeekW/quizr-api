@@ -14,10 +14,10 @@ app.get('/status', (req, res) => {
 // Database setup
 const { sequelize } = require('./database/database');
 
-sequelize.sync({});
+sequelize.sync({ })
 
-// uncomment the line below to enable automatic schema updates (use with caution in production)
-// sequelize.sync({ alter: true })
+// Uncomment the line below to reset the database during development (Warning: This will delete all existing data)
+// sequelize.sync({ force: true })
 
 // Routes
 const authRoutes = require('./routes/authRoutes');
