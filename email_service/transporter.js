@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendConfirmationEmail = async (user, confirmationToken) => {
-    const confirmLink = `${process.env.APP_URL}/auth/verify-email?token=${confirmationToken}`;
+    const confirmLink = `${process.env.APP_URL}/api/auth/verify-email?token=${confirmationToken}`;
     
     const info = await transporter.sendMail({
         from: `"Quizr Support" <${process.env.EMAIL_USER}>`,
@@ -25,7 +25,7 @@ const sendConfirmationEmail = async (user, confirmationToken) => {
 };
 
 const sendPasswordResetEmail = async (user, resetToken) => {
-    const resetLink = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.APP_URL}/api/auth/reset-password?token=${resetToken}`;
 
     const info = await transporter.sendMail({
         from: `"Quizr Support" <${process.env.EMAIL_USER}>`,
