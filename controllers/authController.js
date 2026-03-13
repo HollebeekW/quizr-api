@@ -14,12 +14,7 @@ const generateAccessToken = (user, userId) =>
 exports.register = async (req, res) => {
     try {
         const { email, username, password, confirmPassword } = req.body;
-        const encryptedPassword = encryptPassword(password);
-
-        if (password !== confirmPassword) {
-            return res.status(400).json({ message: 'Passwords do not match' });
-        }
-
+        
         const existingEmail = await User.findOne({ where: { email } });
         if (existingEmail) {
             return res.status(400).json({ message: 'Email already in use' });
@@ -33,7 +28,7 @@ exports.register = async (req, res) => {
         const user = await User.create({
             email,
             username,
-            passwordHash: await encryptedPassword
+            passwordHash: await encryptPassword(password)
         });
 
         // Create verification token in database
@@ -168,10 +163,7 @@ exports.forgotPassword = async (req, res) => {
 exports.resetPassword = async (req, res) => {
     try {
         const { token, newPassword, confirmNewPassword } = req.body;
-        if (newPassword !== confirmNewPassword) {
-            return res.status(400).json({ message: 'Passwords do not match' });
-        }
-
+        
         // Find token in database
         const resetToken = await ResetPasswordToken.findOne({
             where: { token },
