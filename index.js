@@ -4,13 +4,6 @@ const app = express();
 
 app.use(express.json());
 
-app.get('/status', (req, res) => {
-    res.json({
-        status: 'Running',
-        timestamp: new Date().toISOString()
-    });
-});
-
 // Database setup
 const { sequelize } = require('./database/database');
 
@@ -19,9 +12,22 @@ sequelize.sync({ })
 // Uncomment the line below to reset the database during development (Warning: This will delete all existing data)
 // sequelize.sync({ force: true })
 
+// API Router
+const apiRouter = express.Router();
+
+apiRouter.get('/status', (req, res) => {
+    res.json({
+        status: 'Running',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Routes
 const authRoutes = require('./routes/authRoutes');
-app.use('/auth', authRoutes);
+apiRouter.use('/auth', authRoutes);
+
+// Mount all API routes under /api
+app.use('/api', apiRouter);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
