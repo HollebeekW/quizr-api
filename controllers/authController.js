@@ -31,13 +31,11 @@ exports.register = async (req, res) => {
             passwordHash: await encryptPassword(password)
         });
 
-        // Create verification token in database
         const verificationToken = await EmailVerificationToken.create({
             userId: user.id,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
         });
 
-        // Send confirmation email
         await sendConfirmationEmail(user, verificationToken.token);
 
         const accessToken = generateAccessToken(user.username, user.id);
@@ -71,7 +69,6 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ message: 'Invalid verification token' });
         }
 
-        // Check if token has expired
         if (new Date() > verificationToken.expiresAt) {
             await verificationToken.destroy();
             return res.status(400).json({ message: 'Verification link has expired' });
@@ -88,7 +85,6 @@ exports.verifyEmail = async (req, res) => {
             return res.status(400).json({ message: 'Email already verified' });
         }
 
-        // Mark user as verified and delete token
         await user.update({ email_verified: true });
         await verificationToken.destroy();
 
@@ -141,14 +137,16 @@ exports.forgotPassword = async (req, res) => {
             return res.status(400).json({ message: 'Password reset email sent. Please check your inbox' });
         }
 
-        // Delete any existing reset tokens for this user
         await ResetPasswordToken.destroy({ where: { userId: user.id } });
 
-        // Create password reset token in database
         const resetToken = await ResetPasswordToken.create({
             userId: user.id,
             expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
         });
+        
+        if (!resetToken) {
+            return res.status(500).json({ message: 'Failed to create password reset token' });
+        }
 
         await sendPasswordResetEmail(user, resetToken.token);
         res.status(200).json({
@@ -165,7 +163,6 @@ exports.resetPassword = async (req, res) => {
     try {
         const { token, newPassword, confirmNewPassword } = req.body;
         
-        // Find token in database
         const resetToken = await ResetPasswordToken.findOne({
             where: { token },
             include: User
@@ -175,7 +172,6 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ message: 'Invalid password reset token' });
         }
 
-        // Check if token has expired
         if (new Date() > resetToken.expiresAt) {
             await resetToken.destroy();
             return res.status(400).json({ message: 'Password reset link has expired' });
@@ -189,7 +185,6 @@ exports.resetPassword = async (req, res) => {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await user.update({ passwordHash: hashedPassword });
 
-        // Delete the used token
         await resetToken.destroy();
 
         await sendPasswordChangedEmail(user);
