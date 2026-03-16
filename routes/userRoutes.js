@@ -14,4 +14,7 @@ router.patch('/:id/update-password', isAuthenticated, userController.updatePassw
 // Update user email (protected route)
 router.patch('/:id/update-email', isAuthenticated, userController.updateEmail);
 
+// Update user name (protected route)
+router.patch('/:id/update-username', isAuthenticated, userController.updateUsername);
+
 module.exports = router;
