@@ -11,4 +11,7 @@ router.get('/:id', isAuthenticated, userController.getUserById);
 // Update user password (protected route)
 router.patch('/:id/update-password', isAuthenticated, userController.updatePassword);
 
+// Update user email (protected route)
+router.patch('/:id/update-email', isAuthenticated, userController.updateEmail);
+
 module.exports = router;
