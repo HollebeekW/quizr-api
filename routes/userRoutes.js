@@ -5,4 +5,6 @@ const { check: isAuthenticated }  = require('../middlewares/isAuthenticated');
 // Get all users (protected route)
 router.get('/', isAuthenticated, userController.getUsers);
 
+// Get user by ID (protected route)
+router.get('/:id', isAuthenticated, userController.getUserById);
 module.exports = router;
