@@ -89,14 +89,37 @@ exports.updateEmail = async (req, res) => {
 
         try {
             await sendConfirmationEmail(user, verificationToken.token);
-    } catch (emailError) {
-        console.error('Email confirmation sending failed:', emailError);
-        return res.status(500).json({ message: 'Email sending failed', error: emailError.message });
+        } catch (emailError) {
+            console.error('Email confirmation sending failed:', emailError);
+            return res.status(500).json({ message: 'Email sending failed', error: emailError.message });
+        }
+
+        res.json({ message: 'Email updated successfully. You will be logged out and need to confirm and then log in with your new email.' });
+
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
+};
 
-    res.json({ message: 'Email updated successfully. You will be logged out and need to confirm and then log in with your new email.' });
-
-} catch (error) {
-    res.status(500).json({ message: error.message });
-}
+// PATCH update username
+exports.updateUsername = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const { newUsername } = req.body;
+        const existingUser = await User.findOne({ where: { username: newUsername } });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Username is already in use' });
+        }
+        if (user.username === newUsername) {
+            return res.status(400).json({ message: 'New username cannot be the same as the current username' });
+        }
+        user.username = newUsername;
+        await user.save();
+        res.json({ message: 'Username updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
