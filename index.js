@@ -1,8 +1,12 @@
 require('dotenv').config();
 const express = require('express');
 const app = express();
+const cors = require('cors');
 
 app.use(express.json());
+
+// CORS configuration
+app.use(cors()); // Enable CORS for all ports !! REMOVE IN PRODUCTION !!
 
 // Database setup
 const { sequelize } = require('./database/database');
@@ -25,6 +29,9 @@ apiRouter.get('/status', (req, res) => {
 // Routes
 const authRoutes = require('./routes/authRoutes');
 apiRouter.use('/auth', authRoutes);
+
+const userRoutes = require('./routes/userRoutes');
+apiRouter.use('/users', userRoutes);
 
 // Mount all API routes under /api
 app.use('/api', apiRouter);
