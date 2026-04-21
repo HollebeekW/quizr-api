@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed": "node database/seeders/runSeeders.js",
+    "seed:fresh": "node database/seeders/runSeeders.js --fresh"
   },
   "keywords": [],
   "author": "",
