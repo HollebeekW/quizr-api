@@ -12,6 +12,7 @@ const sequelize = new Sequelize({
 const User = require('../models/User')(sequelize);
 const EmailVerificationToken = require('../models/EmailVerificationToken')(sequelize);
 const ResetPasswordToken = require('../models/ResetPasswordToken')(sequelize);
+const QuizCategory = require('../models/QuizCategories')(sequelize);
 
 // Define associations
 User.hasOne(EmailVerificationToken, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -20,4 +21,4 @@ EmailVerificationToken.belongsTo(User, { foreignKey: 'userId' });
 User.hasOne(ResetPasswordToken, { foreignKey: 'userId', onDelete: 'CASCADE' });
 ResetPasswordToken.belongsTo(User, { foreignKey: 'userId' });
 
-module.exports = { sequelize, User, EmailVerificationToken, ResetPasswordToken };
+module.exports = { sequelize, User, EmailVerificationToken, ResetPasswordToken, QuizCategory };
