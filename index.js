@@ -33,6 +33,9 @@ apiRouter.use('/auth', authRoutes);
 const userRoutes = require('./routes/userRoutes');
 apiRouter.use('/users', userRoutes);
 
+const quizCategoryRoutes = require('./routes/quizCategoryRoutes');
+apiRouter.use('/quiz-categories', quizCategoryRoutes);
+
 // Mount all API routes under /api
 app.use('/api', apiRouter);
 
